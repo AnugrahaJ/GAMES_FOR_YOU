@@ -1,8 +1,9 @@
 import random
 import streamlit as st
 
-highest = 50
+highest = 100
 lowest = 1
+max_guesses = 8
 
 st.set_page_config(page_title="Number Guessing Game", page_icon="🎯")
 
@@ -123,6 +124,25 @@ st.markdown(
         margin: 10px 0;
         text-align: center;
     }
+
+    /* Huge title */
+    .stApp .huge-title, .stApp .huge-title * {
+        text-align: center !important;
+        font-size: 84px !important;
+        font-weight: 900 !important;
+        line-height: 1.1 !important;
+        color: #2b1b6b !important;
+        text-shadow: 3px 3px 0 rgba(255, 255, 255, 0.7);
+        margin: 10px 0 18px 0 !important;
+    }
+    @media (max-width: 640px) {
+        .stApp .huge-title, .stApp .huge-title * { font-size: 52px !important; }
+    }
+
+    /* Range badge with white text */
+    .stApp .range-badge, .stApp .range-badge * {
+        color: #ffffff !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -133,17 +153,32 @@ if "answer" not in st.session_state:
     st.session_state.answer = random.randint(lowest, highest)
     st.session_state.guesses = 0
     st.session_state.won = False
+    st.session_state.lost = False
     st.session_state.history = []
 
 # ---------- Header ----------
-st.markdown('<p class="game-title">🎯 Number Guessing Game</p>', unsafe_allow_html=True)
 st.markdown(
-    f'<p class="game-subtitle">Pick a number between <b>{lowest}</b> and <b>{highest}</b></p>',
+    """
+    <div class="huge-title">🎯 Number Guessing Game</div>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f"""
+    <div style="text-align:center; margin: 6px 0 24px 0;">
+        <div style="font-size:20px; margin-bottom:10px;">Pick a number between</div>
+        <span class="range-badge" style="background:#7a5cff; font-size:30px; font-weight:800;
+                     padding:8px 26px; border-radius:16px; box-shadow:0 6px 14px rgba(122,92,255,0.35);">
+            {lowest} &nbsp;–&nbsp; {highest}
+        </span>
+        <div style="font-size:17px; margin-top:14px;">You have <b>{max_guesses}</b> guesses</div>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
 # ---------- Game ----------
-if not st.session_state.won:
+if not st.session_state.won and not st.session_state.lost:
     guess = st.number_input("Enter your guess:", min_value=lowest, max_value=highest, step=1)
     st.markdown(
         '<p style="text-align:center; font-size:16px;">👉 Type your number, then click the <b>Guess</b> button</p>',
@@ -167,10 +202,33 @@ if not st.session_state.won:
             st.session_state.won = True
             st.rerun()
 
+        if not st.session_state.won and st.session_state.guesses >= max_guesses:
+            st.session_state.lost = True
+            st.rerun()
+
+    remaining = max_guesses - st.session_state.guesses
     st.markdown(
-        f'<p style="text-align:center; font-size:18px;">Guesses so far: <b>{st.session_state.guesses}</b></p>',
+        f'<p style="text-align:center; font-size:18px;">Guesses left: <b>{remaining}</b> of {max_guesses}</p>',
         unsafe_allow_html=True,
     )
+elif st.session_state.lost:
+    st.markdown(
+        f"""
+        <div class="win-banner" style="background: linear-gradient(90deg, #ff9a9e, #fecfef);">
+            <div class="big" style="color:#5a0f1e !important;">😭 You lost, sorry! 😭</div>
+            <div class="small" style="color:#5a0f1e !important;">You used all 8 guesses. The number was <b>{st.session_state.answer}</b></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    left, middle, right = st.columns([1, 1, 1])
+    with middle:
+        try_again = st.button("Play again", use_container_width=True)
+
+    if try_again:
+        del st.session_state.answer
+        st.rerun()
 else:
     st.balloons()
     st.markdown(
